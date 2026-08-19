@@ -350,10 +350,12 @@ $env:CURSOR_E2E = '1'
 npm run test:e2e
 ```
 
-The default executable is `agent`. Use `CURSOR_E2E_EXECUTABLE` when a custom
-executable or absolute path is required. `CURSOR_E2E_MODEL` selects a specific
-model, and `CURSOR_E2E_TIMEOUT_MS` overrides the 120-second per-request
-timeout. These variables affect only a deliberately started local E2E run.
+The default executable is `agent`. On Windows, the runner resolves Cursor's
+standard `agent.cmd`/`agent.ps1` shim without enabling general shell execution.
+Use `CURSOR_E2E_EXECUTABLE` when a custom executable or absolute path is
+required. `CURSOR_E2E_MODEL` selects a specific model, and
+`CURSOR_E2E_TIMEOUT_MS` overrides the 120-second per-request timeout. These
+variables affect only a deliberately started local E2E run.
 
 The final acceptance test of the local Cursor installation and account is
 intentionally left to the library user; a live E2E run is not claimed as part

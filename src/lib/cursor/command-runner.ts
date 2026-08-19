@@ -1,4 +1,6 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   CursorCommandRunnerError,
   type CursorCommandRunnerErrorCode,
@@ -81,6 +83,85 @@ interface ProcessSession {
 
 function isAbortError(signal: AbortSignal | undefined): boolean {
   return signal?.aborted === true;
+}
+
+interface SpawnSpec {
+  readonly executable: string;
+  readonly args: readonly string[];
+}
+
+function resolveWindowsCommand(
+  executable: string,
+  env: NodeJS.ProcessEnv,
+): string | undefined {
+  const result = spawnSync('where.exe', [executable], {
+    encoding: 'utf8',
+    env,
+    windowsHide: true,
+  });
+  if (result.error !== undefined || result.status !== 0) {
+    return undefined;
+  }
+
+  return String(result.stdout)
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find((line) => line !== '');
+}
+
+function resolveWindowsPowerShellScript(
+  executable: string,
+  env: NodeJS.ProcessEnv,
+): string | undefined {
+  const resolved =
+    executable.includes('\\') || executable.includes('/')
+      ? executable
+      : resolveWindowsCommand(executable, env);
+  if (resolved === undefined) {
+    return undefined;
+  }
+
+  if (resolved.toLowerCase().endsWith('.ps1') && existsSync(resolved)) {
+    return resolved;
+  }
+
+  if (resolved.toLowerCase().endsWith('.cmd')) {
+    const script = resolved.slice(0, -'.cmd'.length) + '.ps1';
+    if (existsSync(script)) {
+      return script;
+    }
+  }
+
+  return undefined;
+}
+
+function buildSpawnSpec(
+  executable: string,
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+): SpawnSpec {
+  if (process.platform !== 'win32') {
+    return { executable, args };
+  }
+
+  const script = resolveWindowsPowerShellScript(executable, env);
+  if (script === undefined) {
+    return { executable, args };
+  }
+
+  const systemRoot = env.SystemRoot ?? process.env.SystemRoot ?? 'C:\\Windows';
+  const powershell = join(
+    systemRoot,
+    'System32',
+    'WindowsPowerShell',
+    'v1.0',
+    'powershell.exe',
+  );
+
+  return {
+    executable: existsSync(powershell) ? powershell : 'powershell.exe',
+    args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...args],
+  };
 }
 
 export class CursorCommandRunner implements CursorCommandRunnerLike {
@@ -237,9 +318,10 @@ export class CursorCommandRunner implements CursorCommandRunnerLike {
       ...(this.env ?? {}),
       ...(options.env ?? {}),
     };
+    const spawnSpec = buildSpawnSpec(this.executable, args, childEnvironment);
 
     try {
-      child = spawn(this.executable, [...args], {
+      child = spawn(spawnSpec.executable, [...spawnSpec.args], {
         cwd: options.cwd ?? this.cwd,
         env: childEnvironment,
         shell: false,

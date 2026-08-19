@@ -1,7 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   CursorCliClient,
-  type CursorHealth,
   type CursorResult,
   type CursorStreamEvent,
 } from '../../src/index.js';
@@ -14,8 +13,8 @@ if (process.env.CURSOR_E2E !== '1') {
 
 const E2E_TOKEN = 'SIMPLE_CURSOR_CLI_E2E_OK';
 const READ_ONLY_PROMPT = `Reply with the exact token ${E2E_TOKEN}. Do not read, write, or execute anything.`;
-const configuredExecutable = process.env.CURSOR_E2E_EXECUTABLE?.trim();
-const configuredModel = process.env.CURSOR_E2E_MODEL?.trim();
+const configuredExecutable = process.env.CURSOR_E2E_EXECUTABLE?.trim() || undefined;
+const configuredModel = process.env.CURSOR_E2E_MODEL?.trim() || undefined;
 
 function readTimeoutMs(): number {
   const configuredTimeout = process.env.CURSOR_E2E_TIMEOUT_MS;
@@ -40,7 +39,7 @@ function unwrap<T>(result: CursorResult<T>, operation: string): T {
 }
 
 const client = new CursorCliClient({
-  executable: configuredExecutable || 'agent',
+  executable: configuredExecutable ?? 'agent',
   timeoutMs: readTimeoutMs(),
 });
 
@@ -50,53 +49,19 @@ const input = {
 };
 
 describe('Cursor CLI end-to-end', () => {
-  let health!: CursorHealth;
-  let healthError: Error | undefined;
+  it('runs the authenticated read-only Cursor CLI flow', async () => {
+    const health = unwrap(await client.health(), 'health');
+    expect(health.cli.available).toBe(true);
+    expect(health.cli.version).not.toBe('');
+    expect(health.authentication.status).toBe('authenticated');
+    expect(health.canRun).toBe(true);
 
-  beforeAll(async () => {
-    const result = await client.health();
-    if (!result.ok) {
-      healthError = new Error(
-        `health failed with ${result.error.category}: ${result.error.message}`,
-      );
-      return;
-    }
-    health = result.data;
-
-    if (health.authentication.status !== 'authenticated' || health.canRun !== true) {
-      healthError = new Error(
-        'Cursor CLI authentication is unavailable. Run the normal agent login flow before the E2E suite.',
-      );
-    }
-  });
-
-  function requireAuthenticatedHealth(): CursorHealth {
-    if (healthError !== undefined) {
-      throw healthError;
-    }
-    return health;
-  }
-
-  it('detects an installed and authenticated Cursor CLI', () => {
-    const verifiedHealth = requireAuthenticatedHealth();
-    expect(verifiedHealth.cli.available).toBe(true);
-    expect(verifiedHealth.cli.version).not.toBe('');
-    expect(verifiedHealth.authentication.status).toBe('authenticated');
-    expect(verifiedHealth.canRun).toBe(true);
-  });
-
-  it('runs a read-only Ask request with JSON output', async () => {
-    requireAuthenticatedHealth();
     const result = unwrap(await client.ask({ ...input, outputFormat: 'json' }), 'ask');
 
     expect(result.outputFormat).toBe('json');
     expect(result.text.trim()).not.toBe('');
     expect(result.text).toContain(E2E_TOKEN);
     expect(result.sessionId).not.toBeNull();
-  });
-
-  it('streams a read-only Ask request through a terminal result event', async () => {
-    requireAuthenticatedHealth();
     const events: CursorStreamEvent[] = [];
     for await (const event of client.stream(input)) {
       events.push(event);
