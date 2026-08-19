@@ -13,5 +13,11 @@
     "skipLibCheck": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "tests", "tsup.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "tsup.config.ts",
+    "vitest.config.ts",
+    "vitest.e2e.config.ts"
+  ]
 }

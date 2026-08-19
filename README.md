@@ -320,9 +320,44 @@ npm run build
 npm run pack:check
 ```
 
-The required tests do not install or authenticate Cursor. Optional integration
-tests can be added by a consuming project when a local `agent` executable and
-login are available.
+The commands above are the offline validation path. They do not install or
+authenticate Cursor and are the checks executed by GitHub Actions. The CI
+workflow intentionally does not run the real Cursor CLI or require Cursor
+credentials.
+
+### Local Cursor CLI E2E tests
+
+The repository also contains a separate, opt-in E2E suite. It invokes the real
+`agent` executable through `CursorCliClient`, checks the installed CLI and
+authentication status, performs a read-only Ask request with JSON output, and
+verifies a streaming request ends with a normalized `result` event.
+
+The suite makes real Cursor requests and may consume account quota. Complete
+Cursor's normal authentication flow first; the library does not perform login
+or accept credentials as E2E arguments. The test prompts explicitly request no
+file writes or shell commands, and the tests never pass `force` or `yolo`.
+
+The E2E command is strict and fails unless it is explicitly enabled:
+
+```bash
+CURSOR_E2E=1 npm run test:e2e
+```
+
+In PowerShell:
+
+```powershell
+$env:CURSOR_E2E = '1'
+npm run test:e2e
+```
+
+The default executable is `agent`. Use `CURSOR_E2E_EXECUTABLE` when a custom
+executable or absolute path is required. `CURSOR_E2E_MODEL` selects a specific
+model, and `CURSOR_E2E_TIMEOUT_MS` overrides the 120-second per-request
+timeout. These variables affect only a deliberately started local E2E run.
+
+The final acceptance test of the local Cursor installation and account is
+intentionally left to the library user; a live E2E run is not claimed as part
+of CI validation.
 
 ## Scope and future slices
 
