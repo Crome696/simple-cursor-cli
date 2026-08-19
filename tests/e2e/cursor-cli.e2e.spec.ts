@@ -5,12 +5,6 @@ import {
   type CursorStreamEvent,
 } from '../../src/index.js';
 
-if (process.env.CURSOR_E2E !== '1') {
-  throw new Error(
-    'Cursor CLI E2E tests are opt-in. Set CURSOR_E2E=1 before running npm run test:e2e.',
-  );
-}
-
 const E2E_TOKEN = 'SIMPLE_CURSOR_CLI_E2E_OK';
 const READ_ONLY_PROMPT = `Reply with the exact token ${E2E_TOKEN}. Do not read, write, or execute anything.`;
 const configuredExecutable = process.env.CURSOR_E2E_EXECUTABLE?.trim() || undefined;
@@ -45,6 +39,7 @@ const client = new CursorCliClient({
 
 const input = {
   prompt: READ_ONLY_PROMPT,
+  extraArgs: ['--trust'],
   ...(configuredModel === undefined ? {} : { model: configuredModel }),
 };
 

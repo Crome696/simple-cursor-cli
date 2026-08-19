@@ -327,31 +327,34 @@ credentials.
 
 ### Local Cursor CLI E2E tests
 
-The repository also contains a separate, opt-in E2E suite. It invokes the real
-`agent` executable through `CursorCliClient`, checks the installed CLI and
-authentication status, performs a read-only Ask request with JSON output, and
-verifies a streaming request ends with a normalized `result` event.
+The repository also contains a separate E2E suite that is not included in
+`npm test`. It invokes the real `agent` executable through `CursorCliClient`,
+checks the installed CLI and authentication status, performs a read-only Ask
+request with JSON output, and verifies a streaming request ends with a
+normalized `result` event.
 
 The suite makes real Cursor requests and may consume account quota. Complete
 Cursor's normal authentication flow first; the library does not perform login
 or accept credentials as E2E arguments. The test prompts explicitly request no
 file writes or shell commands, and the tests never pass `force` or `yolo`.
 
-The E2E command is strict and fails unless it is explicitly enabled:
+Run the E2E suite directly when you intentionally want to make the real local
+CLI requests:
 
 ```bash
-CURSOR_E2E=1 npm run test:e2e
+npm run test:e2e
 ```
 
 In PowerShell:
 
 ```powershell
-$env:CURSOR_E2E = '1'
 npm run test:e2e
 ```
 
 The default executable is `agent`. On Windows, the runner resolves Cursor's
 standard `agent.cmd`/`agent.ps1` shim without enabling general shell execution.
+The E2E request includes Cursor's `--trust` workspace acknowledgement, but no
+write-enabling flag such as `--force` or `--yolo`.
 Use `CURSOR_E2E_EXECUTABLE` when a custom executable or absolute path is
 required. `CURSOR_E2E_MODEL` selects a specific model, and
 `CURSOR_E2E_TIMEOUT_MS` overrides the 120-second per-request timeout. These
