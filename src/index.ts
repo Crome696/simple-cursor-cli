@@ -1,3 +1,12 @@
+/**
+ * Public package entry point for the typed Cursor Agent headless client.
+ *
+ * The module keeps the public client, process boundary, parsers, validation
+ * helpers, error types, and input/output contracts available from one stable
+ * import path.
+ *
+ * @module
+ */
 export { CursorCliClient, buildCursorCliArgs } from './lib/cursor/client.js';
 export { CursorCommandRunner } from './lib/cursor/command-runner.js';
 export {

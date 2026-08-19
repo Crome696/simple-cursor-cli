@@ -37,6 +37,14 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 
+/**
+ * Builds the deterministic argument array passed to the Cursor Agent CLI.
+ *
+ * The input is validated before any argument is emitted. The returned array
+ * always enables print mode and an explicit output format, then appends the
+ * configured operation, model, session, workspace, approval, and context
+ * options.
+ */
 export function buildCursorCliArgs(
   input: CursorRunInput,
 ): CursorResult<readonly string[]> {
@@ -94,12 +102,25 @@ function throwForResult<T>(result: CursorResult<T>): T {
   return result.data;
 }
 
+/**
+ * High-level typed client for invoking the installed Cursor Agent CLI.
+ *
+ * Aggregate methods return a discriminated result. The streaming method
+ * exposes normalized events and raises CursorCliError for process or parsing
+ * failures. Authentication and permission decisions remain with Cursor.
+ */
 export class CursorCliClient {
   private readonly runner: CursorCommandRunnerLike;
   private readonly timeoutMs: number;
   private readonly cwd: string | undefined;
   private readonly env: NodeJS.ProcessEnv | undefined;
 
+  /**
+   * Creates a client with an optional executable, process configuration, or
+   * injectable runner.
+   *
+   * @param options Client defaults applied to each operation.
+   */
   constructor(options: CursorCliClientOptions = {}) {
     const validation = validateClientOptions(options);
     if (!validation.ok) {
@@ -118,6 +139,12 @@ export class CursorCliClient {
       });
   }
 
+  /**
+   * Runs a headless Agent, Plan, or Ask operation and aggregates its output.
+   *
+   * @param input Prompt and operation options.
+   * @returns A typed result or categorized operation error.
+   */
   async run(input: CursorRunInput): Promise<CursorResult<CursorRunResult>> {
     const operation = 'run';
     const validation = validateCursorRunInput(input, operation);
@@ -150,18 +177,49 @@ export class CursorCliClient {
     );
   }
 
+  /**
+   * Runs the Cursor Plan mode without write-approval shortcuts.
+   *
+   * @param input Prompt and plan-compatible options.
+   * @returns A typed result or categorized operation error.
+   */
   async plan(input: CursorPlanInput): Promise<CursorResult<CursorRunResult>> {
     return this.run({ ...input, mode: 'plan', plan: true });
   }
 
+  /**
+   * Runs the Cursor Ask mode without write-approval shortcuts.
+   *
+   * @param input Prompt and ask-compatible options.
+   * @returns A typed result or categorized operation error.
+   */
   async ask(input: CursorAskInput): Promise<CursorResult<CursorRunResult>> {
     return this.run({ ...input, mode: 'ask', plan: false });
   }
 
+  /**
+   * Streams normalized Cursor events as they arrive.
+   *
+   * The method always requests stream-JSON output. Consumers can stop
+   * iteration to trigger process cleanup; process, timeout, abort, exit, and
+   * parse failures are raised as CursorCliError.
+   *
+   * @param input Prompt and stream-compatible options.
+   * @returns An async iterable of normalized Cursor events.
+   */
   stream(input: CursorStreamInput): AsyncIterable<CursorStreamEvent> {
     return this.streamInternal(input);
   }
 
+  /**
+   * Detects the installed CLI version and checks Cursor authentication status.
+   *
+   * A missing executable or failed version command is returned as an error.
+   * When authentication is unavailable, the health result distinguishes
+   * unauthenticated and unknown status with a sanitized diagnostic.
+   *
+   * @returns A typed health result or categorized diagnostic error.
+   */
   async health(): Promise<CursorResult<CursorHealth>> {
     const versionResult = await this.runRaw('health.cli_version', ['--version']);
     if (!versionResult.ok) {
@@ -202,6 +260,11 @@ export class CursorCliClient {
     });
   }
 
+  /**
+   * Lists models reported by the installed Cursor CLI.
+   *
+   * @returns Normalized model summaries or a categorized operation error.
+   */
   async listModels(): Promise<CursorResult<readonly CursorModelSummary[]>> {
     const operation = 'models.list';
     const result = await this.runRaw(operation, ['models']);
@@ -214,6 +277,11 @@ export class CursorCliClient {
     return parseCursorModels(result.data.stdout, operation);
   }
 
+  /**
+   * Lists MCP servers reported by the installed Cursor CLI.
+   *
+   * @returns Normalized server summaries or a categorized operation error.
+   */
   async listMcpServers(): Promise<CursorResult<readonly CursorMcpServer[]>> {
     const operation = 'mcp.list';
     const result = await this.runRaw(operation, ['mcp', 'list']);

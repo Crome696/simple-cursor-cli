@@ -1,8 +1,14 @@
 import type { CommandExecutionResult, CursorError, CursorResult } from './types.js';
 
+/** Low-level process failures raised by the injectable command runner. */
 export type CursorCommandRunnerErrorCode =
   'executable_unavailable' | 'timeout' | 'aborted' | 'spawn_error';
 
+/**
+ * Error raised by streaming operations after a categorized Cursor failure.
+ *
+ * The structured error is sanitized before it is exposed to the caller.
+ */
 export class CursorCliError extends Error {
   readonly error: CursorError;
 
@@ -20,6 +26,7 @@ export class CursorCliError extends Error {
   }
 }
 
+/** Internal process error carrying a stable runner code and sanitized stderr. */
 export class CursorCommandRunnerError extends Error {
   readonly code: CursorCommandRunnerErrorCode;
   readonly stderr: string;
@@ -44,6 +51,12 @@ export function failure<T = never>(error: CursorError): CursorResult<T> {
   return { ok: false, error };
 }
 
+/**
+ * Removes terminal control sequences and redacts common credential patterns.
+ *
+ * The result is intentionally short and suitable for returning in an error
+ * object or logging as an operational diagnostic.
+ */
 export function sanitizeDiagnostic(value: string): string {
   const withoutAnsi = value.replace(
     // eslint-disable-next-line no-control-regex
@@ -126,6 +139,9 @@ function classifyDiagnostic(diagnostic: string): CursorError['category'] | undef
   return undefined;
 }
 
+/**
+ * Converts a non-zero Cursor process result into a categorized library error.
+ */
 export function cliExitFailure(
   operation: string,
   result: Pick<CommandExecutionResult, 'exitCode' | 'stdout' | 'stderr'>,
@@ -146,6 +162,9 @@ export function cliExitFailure(
   );
 }
 
+/**
+ * Converts a low-level runner error into the public Cursor error categories.
+ */
 export function commandRunnerFailure(
   operation: string,
   runnerError: CursorCommandRunnerError,

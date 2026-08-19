@@ -1,14 +1,105 @@
+<p align="center">
+  <img
+    src="assets/simple-cursor-cli-banner.png"
+    width="72%"
+    alt="Simple Cursor CLI branding banner showing a TypeScript library and Cursor Agent CLI integration."
+  />
+</p>
+
 # simple-cursor-cli
 
+<p align="center">
+  A typed Node.js client for invoking the Cursor Agent headless CLI from TypeScript and JavaScript applications.
+</p>
+
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/Crome696/simple-cursor-cli?style=flat-square" alt="MIT License" />
+  </a>
+</p>
+
+## Project snapshot
+
+| Fact                 | Value                            |
+| -------------------- | -------------------------------- |
+| Package              | `simple-cursor-cli`              |
+| Runtime              | Node.js 22 or newer              |
+| Modules              | ESM and CommonJS                 |
+| Types                | TypeScript declarations included |
+| Runtime dependencies | None                             |
+| Default executable   | `agent`                          |
+| License              | MIT                              |
+
+## What it does
+
 `simple-cursor-cli` is a standalone TypeScript library for invoking the
-installed Cursor Agent CLI from Node.js applications. It focuses on a safe,
-headless process boundary and exposes normalized results without taking
-ownership of Cursor authentication, permissions, or the terminal UI.
+installed Cursor Agent CLI from Node.js applications. It provides a typed,
+shell-free process boundary and normalized text, JSON, and stream-JSON results
+without taking ownership of Cursor authentication, permissions, or the
+interactive terminal UI.
 
 The package has no runtime dependencies, targets Node.js 22 and newer, ships
 ESM and CommonJS entry points, and includes TypeScript declarations.
 
-## Prerequisites
+## Key features
+
+- Typed Agent, Plan, Ask, aggregate, and streaming operations.
+- Deterministic CLI argument construction with input and credential validation.
+- Injectable process runner for offline tests and external integrations.
+- Normalized Cursor events with raw values retained for forward compatibility.
+- Health, authentication-status, model-list, and MCP-server diagnostics.
+- Timeout, abort, Windows wrapper, and shell-free process handling.
+
+## Architecture
+
+```mermaid
+flowchart TB
+    app[Node.js or TypeScript application] --> entry[src/index.ts public exports]
+    entry --> client[CursorCliClient]
+    client --> validation[Input validation and argument construction]
+    client --> runner[CursorCommandRunner]
+    runner --> agent[External Cursor Agent CLI]
+    agent --> runner
+    runner --> parser[Output parsers and event normalization]
+    parser --> result[CursorResult or AsyncIterable events]
+    client --> diagnostics[Categorized errors and sanitized diagnostics]
+```
+
+The overview follows the imports and process flow in the current source. The
+Cursor Agent CLI is the external dependency; the remaining components are
+inside this package.
+
+## Project structure
+
+```text
+assets/
+└── simple-cursor-cli-banner.png
+docs/
+├── code.md
+└── library.md
+src/
+├── index.ts
+└── lib/cursor/
+    ├── client.ts
+    ├── command-runner.ts
+    ├── errors.ts
+    ├── parsers.ts
+    ├── types.ts
+    └── validation.ts
+tests/
+└── e2e/cursor-cli.e2e.spec.ts
+```
+
+## Documentation
+
+- [Library guide](docs/library.md) for installation, usage, diagnostics,
+  configuration, and compatibility.
+- [Code architecture](docs/code.md) for module boundaries, process lifecycle,
+  parser/error contracts, testing, and packaging.
+
+## Getting started
+
+### Prerequisites
 
 1. Install the Cursor Agent CLI and make the `agent` executable available on
    `PATH`. A custom executable can be selected explicitly with
@@ -30,13 +121,15 @@ credentials. Credential-bearing arguments such as `-a`, `--api-key`, and
 are passed only to the child process and are not included in results or error
 diagnostics.
 
-## Installation
+### Install the package
 
 ```bash
 npm install simple-cursor-cli
 ```
 
-## ESM
+## Usage and examples
+
+### ESM
 
 ```ts
 import { CursorCliClient } from 'simple-cursor-cli';
@@ -59,7 +152,7 @@ The default executable is exactly `agent`. There is no implicit fallback to
 `cursor-agent`, because silently selecting a different installation can hide a
 deployment error.
 
-## CommonJS
+### CommonJS
 
 The same package can be loaded from a CommonJS project:
 
@@ -82,9 +175,9 @@ main().catch((error) => {
 });
 ```
 
-## Headless operations
+### Headless operations
 
-### `run`
+#### `run`
 
 `run()` is the general aggregate operation. The default output mode is
 `json`; select `text` when only the rendered response is needed or
@@ -103,7 +196,7 @@ const result = await client.run({
 `force` and `yolo` are approval shortcuts for write-oriented execution. They
 are mutually exclusive and are not accepted by `plan()` or `ask()`.
 
-### `plan` and `ask`
+#### `plan` and `ask`
 
 These convenience methods select their respective modes and do not expose
 write approval flags:
@@ -124,7 +217,7 @@ by the installed CLI. The library does not invent model names or add an
 undocumented reasoning flag; use a raw string when a newer CLI introduces a
 model value that this package does not know about.
 
-### Streaming
+#### Streaming
 
 `stream()` always requests `stream-json` and yields normalized events as they
 arrive. Unknown event types remain available through `raw`, so a newer Cursor
@@ -153,7 +246,7 @@ The async iterator raises `CursorCliError` for process failures, timeouts,
 abort, non-zero exits, or malformed stream JSON. Breaking out of iteration
 causes the child process to be cleaned up.
 
-### Sessions, workspaces, and worktrees
+#### Sessions, workspaces, and worktrees
 
 Cursor session continuation is passed as structured options:
 
@@ -177,9 +270,11 @@ Arguments are passed to `node:child_process.spawn` as an array with
 `shell: false`; shell metacharacters are therefore data, not executable shell
 syntax.
 
-## Diagnostics
+## Configuration
 
-### Health
+### Diagnostics
+
+#### Health
 
 `health()` separates executable/version detection from authentication:
 
@@ -200,7 +295,7 @@ with a failed login check returns a successful health result with
 `authentication.status` set to `unauthenticated` or `unknown`, allowing a
 deployment diagnostic to distinguish those cases.
 
-### Models and MCP servers
+#### Models and MCP servers
 
 ```ts
 const models = await client.listModels();
@@ -222,7 +317,7 @@ list output, but an empty or structurally unsupported response is reported as
 a categorized `parse` error instead of being silently converted to an empty
 list.
 
-## Capabilities and version-specific flags
+### Capabilities and version-specific flags
 
 The optional `capabilities` object is metadata for an explicit context hint in
 the prompt. It does not install or enable a skill, plugin, MCP server, rule,
@@ -233,7 +328,7 @@ await client.run({
   prompt: 'Review the selected files.',
   capabilities: {
     rules: ['review.mdc'],
-    files: ['src/index.ts', 'src/client.ts'],
+    files: ['src/index.ts', 'src/lib/cursor/client.ts'],
     mcpServers: ['filesystem'],
   },
 });
@@ -252,7 +347,7 @@ Known options should be preferred because the builder validates their
 combinations and keeps argument ordering deterministic. Credential-related
 flags are rejected even when supplied through `extraArgs`.
 
-## Errors and process control
+## Error handling
 
 Aggregate operations return a discriminated `CursorResult<T>`:
 
@@ -279,7 +374,7 @@ and redacted for common API-key, token, bearer, secret, and password forms.
 client constructor. Environment overlays are never copied into result objects
 or error messages.
 
-## Public API
+## API reference
 
 The package root exports:
 
@@ -309,7 +404,7 @@ const client = new CursorCliClient({
 });
 ```
 
-## Development and validation
+## Development and testing
 
 ```bash
 npm run typecheck
@@ -364,7 +459,7 @@ The final acceptance test of the local Cursor installation and account is
 intentionally left to the library user; a live E2E run is not claimed as part
 of CI validation.
 
-## Scope and future slices
+## Security, data, and limitations
 
 This first package slice is the reusable headless execution core. It does not
 rebuild Cursor's TUI or slash-command interface and does not implement ACP,
@@ -378,3 +473,14 @@ current `agent --help`, the official documentation, and the
 is documented separately at
 [Cursor ACP](https://cursor.com/docs/cli/acp), and Shell Mode has its own
 [security and timeout behavior](https://cursor.com/docs/cli/shell-mode).
+
+## Contributing and support
+
+Keep changes focused on the documented Cursor headless surface, add offline
+fixtures for new output shapes, and run the validation commands above before
+opening a pull request. Use GitHub Issues for defects, compatibility reports,
+and documentation improvements.
+
+## License
+
+Released under the [MIT License](LICENSE).

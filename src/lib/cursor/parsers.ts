@@ -146,6 +146,12 @@ function unknownEvent(type: string, raw: unknown): CursorUnknownEvent {
   return { type, raw };
 }
 
+/**
+ * Normalizes one raw Cursor stream value into a typed event.
+ *
+ * Known event families receive stable fields; unknown event types retain their
+ * original value so callers can remain forward-compatible.
+ */
 export function parseCursorStreamEvent(
   value: unknown,
   operation = 'stream',
@@ -321,6 +327,12 @@ function aggregateEvents(
   });
 }
 
+/**
+ * Parses text, JSON, or line-delimited stream-JSON Cursor output.
+ *
+ * JSON and stream-JSON results are aggregated into a typed run result with
+ * normalized events and the original raw representation.
+ */
 export function parseCursorOutput(
   stdout: string,
   outputFormat: CursorOutputFormat,
@@ -398,6 +410,7 @@ export function parseCursorOutput(
   return aggregateEvents(events, outputFormat, rawValues);
 }
 
+/** Extracts a semantic Cursor CLI version from version command output. */
 export function parseCursorVersion(
   stdout: string,
   operation = 'health.version',
@@ -436,6 +449,9 @@ function parseListJson(
   return parseFailure(operation, 'Cursor list output did not contain entries.');
 }
 
+/**
+ * Parses model-list output from JSON or common line-oriented CLI text.
+ */
 export function parseCursorModels(
   stdout: string,
   operation = 'models.list',
@@ -484,6 +500,9 @@ export function parseCursorModels(
     : success(models);
 }
 
+/**
+ * Parses MCP-server list output from JSON or common line-oriented CLI text.
+ */
 export function parseCursorMcpServers(
   stdout: string,
   operation = 'mcp.list',
@@ -535,6 +554,12 @@ export function parseCursorMcpServers(
     : success(servers);
 }
 
+/**
+ * Selects the exact model value passed to the Cursor CLI.
+ *
+ * String selections pass through unchanged; object selections prefer their
+ * explicit variant and otherwise use the model identifier.
+ */
 export function formatCursorModel(model: CursorModel): string {
   return typeof model === 'string' ? model : (model.variant ?? model.id);
 }
