@@ -149,6 +149,12 @@ function validateApprovalEscapeHatch(
       );
 }
 
+/**
+ * Validates one run-like operation before argument construction or spawning.
+ *
+ * The checks cover values, incompatible options, paths, timeouts, extra
+ * arguments, and credential-bearing flags.
+ */
 export function validateCursorRunInput(
   input: CursorRunInput,
   operation = 'run',
@@ -248,6 +254,9 @@ export function validateCursorRunInput(
   return { ok: true, data: input };
 }
 
+/**
+ * Validates the defaults used to construct a high-level Cursor client.
+ */
 export function validateClientOptions(
   options: CursorCliClientOptions,
 ): CursorResult<CursorCliClientOptions> {

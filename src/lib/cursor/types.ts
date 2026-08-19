@@ -1,5 +1,7 @@
+/** Cursor operation mode understood by the headless Agent CLI. */
 export type CursorMode = 'agent' | 'plan' | 'ask';
 
+/** Output representation requested from the Cursor CLI. */
 export type CursorOutputFormat = 'text' | 'json' | 'stream-json';
 
 /**
@@ -15,8 +17,10 @@ export interface CursorModelSelection {
   readonly variant?: string;
 }
 
+/** A raw model value or an explicit model selection object. */
 export type CursorModel = string | CursorModelSelection;
 
+/** Optional context labels appended to the operation prompt. */
 export interface CursorCapabilitySelection {
   readonly skills?: readonly string[];
   readonly plugins?: readonly string[];
@@ -26,6 +30,7 @@ export interface CursorCapabilitySelection {
   readonly files?: readonly string[];
 }
 
+/** Shared input accepted by the general client operation. */
 export interface CursorRunInput {
   readonly prompt: string;
   readonly model?: CursorModel;
@@ -54,14 +59,18 @@ export interface CursorRunInput {
   readonly signal?: AbortSignal;
 }
 
+/** Input for the plan convenience method. */
 export type CursorPlanInput = Omit<CursorRunInput, 'mode' | 'plan' | 'force' | 'yolo'>;
 
+/** Input for the ask convenience method. */
 export type CursorAskInput = Omit<CursorRunInput, 'mode' | 'plan' | 'force' | 'yolo'>;
 
+/** Input for incremental stream operations. */
 export type CursorStreamInput = Omit<CursorRunInput, 'outputFormat'> & {
   readonly outputFormat?: 'stream-json';
 };
 
+/** Process controls passed to an injectable command runner. */
 export interface CommandExecutionOptions {
   readonly timeoutMs?: number;
   readonly cwd?: string;
@@ -69,6 +78,7 @@ export interface CommandExecutionOptions {
   readonly signal?: AbortSignal;
 }
 
+/** Completed stdout, stderr, exit-code, and duration data. */
 export interface CommandExecutionResult {
   readonly exitCode: number;
   readonly stdout: string;
@@ -76,7 +86,7 @@ export interface CommandExecutionResult {
   readonly durationMs: number;
 }
 
-/** Low-level process events exposed only to injectable runners. */
+/** Low-level process events exposed only through injectable runners. */
 export type CursorProcessEvent =
   | { readonly type: 'stdout'; readonly data: string }
   | { readonly type: 'stderr'; readonly data: string }
@@ -86,6 +96,7 @@ export type CursorProcessEvent =
       readonly durationMs: number;
     };
 
+/** Injectable runner contract used by the client and offline tests. */
 export interface CursorCommandRunnerLike {
   execute(
     args: readonly string[],
@@ -98,6 +109,7 @@ export interface CursorCommandRunnerLike {
   ): AsyncIterable<CursorProcessEvent>;
 }
 
+/** Defaults and dependencies used to construct a Cursor client. */
 export interface CursorCliClientOptions {
   readonly runner?: CursorCommandRunnerLike;
   /** Defaults to `agent`; `cursor-agent` is supported only when explicit. */
@@ -107,6 +119,7 @@ export interface CursorCliClientOptions {
   readonly env?: NodeJS.ProcessEnv;
 }
 
+/** Normalized Cursor session or system initialization event. */
 export interface CursorSystemEvent {
   readonly type: 'system';
   readonly subtype?: string;
@@ -115,6 +128,7 @@ export interface CursorSystemEvent {
   readonly raw: unknown;
 }
 
+/** Normalized assistant response or delta event. */
 export interface CursorAssistantEvent {
   readonly type: 'assistant';
   readonly subtype?: string;
@@ -123,6 +137,7 @@ export interface CursorAssistantEvent {
   readonly raw: unknown;
 }
 
+/** Normalized tool-call progress event. */
 export interface CursorToolCallEvent {
   readonly type: 'tool_call';
   readonly subtype?: string;
@@ -132,6 +147,7 @@ export interface CursorToolCallEvent {
   readonly raw: unknown;
 }
 
+/** Normalized terminal result event with request metadata. */
 export interface CursorResultEvent {
   readonly type: 'result';
   readonly subtype?: string;
@@ -144,11 +160,13 @@ export interface CursorResultEvent {
   readonly raw: unknown;
 }
 
+/** Forward-compatible event retaining an unknown raw Cursor value. */
 export interface CursorUnknownEvent {
   readonly type: string;
   readonly raw: unknown;
 }
 
+/** Union of normalized and forward-compatible stream events. */
 export type CursorStreamEvent =
   | CursorSystemEvent
   | CursorAssistantEvent
@@ -156,6 +174,7 @@ export type CursorStreamEvent =
   | CursorResultEvent
   | CursorUnknownEvent;
 
+/** Aggregated output returned by non-streaming client operations. */
 export interface CursorRunResult {
   readonly text: string;
   readonly sessionId: string | null;
@@ -168,9 +187,11 @@ export interface CursorRunResult {
   readonly raw: unknown;
 }
 
+/** Authentication state reported by the health operation. */
 export type CursorAuthenticationStatus =
   'authenticated' | 'unauthenticated' | 'unknown';
 
+/** CLI availability, authentication, and run-readiness diagnostic. */
 export interface CursorHealth {
   readonly cli: {
     readonly available: true;
@@ -183,18 +204,21 @@ export interface CursorHealth {
   readonly canRun: boolean;
 }
 
+/** Stable model summary with the original parsed item. */
 export interface CursorModelSummary {
   readonly id: string;
   readonly name: string | null;
   readonly raw: unknown;
 }
 
+/** Stable MCP-server summary with the original parsed item. */
 export interface CursorMcpServer {
   readonly name: string;
   readonly status: string | null;
   readonly raw: unknown;
 }
 
+/** Stable categories for expected operation and process failures. */
 export type CursorErrorCategory =
   | 'validation'
   | 'cli_unavailable'
@@ -208,6 +232,7 @@ export type CursorErrorCategory =
   | 'parse'
   | 'unknown';
 
+/** Sanitized structured error returned in a failed CursorResult. */
 export interface CursorError {
   readonly category: CursorErrorCategory;
   readonly operation: string;
@@ -216,6 +241,7 @@ export interface CursorError {
   readonly stderr?: string;
 }
 
+/** Discriminated success/failure result returned by aggregate operations. */
 export type CursorResult<T> =
   | { readonly ok: true; readonly data: T }
   | { readonly ok: false; readonly error: CursorError };

@@ -164,12 +164,25 @@ function buildSpawnSpec(
   };
 }
 
+/**
+ * Low-level shell-free process runner for the Cursor Agent executable.
+ *
+ * The runner separates executable and argument values, supports the standard
+ * Windows Cursor wrapper, and owns timeout, abort, output, and cleanup
+ * behavior. The high-level client is responsible for validation and parsing.
+ */
 export class CursorCommandRunner implements CursorCommandRunnerLike {
   readonly executable: string;
   readonly timeoutMs: number;
   readonly cwd: string | undefined;
   readonly env: NodeJS.ProcessEnv | undefined;
 
+  /**
+   * Creates a runner with process defaults.
+   *
+   * @param options Executable, timeout, working-directory, and environment
+   * defaults.
+   */
   constructor(
     options: {
       readonly executable?: string;
@@ -194,6 +207,13 @@ export class CursorCommandRunner implements CursorCommandRunnerLike {
     this.env = options.env;
   }
 
+  /**
+   * Executes a command and aggregates stdout, stderr, exit code, and duration.
+   *
+   * @param args Argument array passed to the configured executable.
+   * @param options Per-execution process controls.
+   * @returns The completed process result.
+   */
   async execute(
     args: readonly string[],
     options: CommandExecutionOptions = {},
@@ -222,6 +242,13 @@ export class CursorCommandRunner implements CursorCommandRunnerLike {
     };
   }
 
+  /**
+   * Streams low-level process events and cleans up on iterator completion.
+   *
+   * @param args Argument array passed to the configured executable.
+   * @param options Per-execution process controls.
+   * @returns Stdout, stderr, and close events.
+   */
   async *stream(
     args: readonly string[],
     options: CommandExecutionOptions = {},
