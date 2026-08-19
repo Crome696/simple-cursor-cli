@@ -265,6 +265,11 @@ The client and per-operation inputs expose these boundaries:
   `--token`, `--password`, and `--secret` are rejected, including assignment
   forms.
 
+Environment overlays are not copied into the library's result objects or error
+diagnostics. The selected child process can still print values it receives, so
+callers should not provide secrets to a CLI invocation that may echo its
+environment.
+
 The runner passes an argument array to Node's child-process API with
 `shell: false`. Shell metacharacters are data, not shell syntax. Diagnostics
 are ANSI-cleaned, length-limited, and redacted for common token, bearer,
