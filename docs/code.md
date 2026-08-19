@@ -65,8 +65,9 @@ use their dedicated list commands and the same parser/error boundaries.
   errors.
 
 The runner receives environment and working-directory values from the client
-but does not turn them into result data. Credential-bearing arguments are
-rejected in validation before the process is started. `sanitizeDiagnostic()`
+but does not add them to result data; stdout and stderr emitted by the child
+remain subject to the selected CLI's behavior. Credential-bearing arguments
+are rejected in validation before the process is started. `sanitizeDiagnostic()`
 removes ANSI control sequences, redacts common credential formats, collapses
 whitespace, and limits the resulting diagnostic length.
 

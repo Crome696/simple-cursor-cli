@@ -117,9 +117,11 @@ See Cursor's current documentation for [installation](https://cursor.com/docs/cl
 
 The library never manages login, logout, API keys, tokens, or worker
 credentials. Credential-bearing arguments such as `-a`, `--api-key`, and
-`--auth-token` are rejected, including assignment forms. Environment values
-are passed only to the child process and are not included in results or error
-diagnostics.
+`--auth-token` are rejected, including assignment forms. Environment overlays
+are sent only to the child process by this library; they are not copied into
+its own result objects or error diagnostics. A child process can still print
+values it receives, so do not provide secrets to a CLI invocation that may
+echo its environment.
 
 ### Install the package
 
@@ -371,8 +373,10 @@ parse, and unknown failures. Diagnostics are ANSI-cleaned, length-limited,
 and redacted for common API-key, token, bearer, secret, and password forms.
 
 `cwd`, `env`, `timeoutMs`, and `AbortSignal` can be set per operation or in the
-client constructor. Environment overlays are never copied into result objects
-or error messages.
+client constructor. The library does not add environment overlay values to
+result objects or error messages. A child process can still emit its own
+stdout or stderr, so callers remain responsible for avoiding CLI invocations
+that echo secrets.
 
 ## API reference
 
