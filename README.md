@@ -2,7 +2,7 @@
   <img
     src="assets/simple-cursor-cli-banner.png"
     width="72%"
-    alt="Simple Cursor CLI branding banner showing a TypeScript library and Cursor Agent CLI integration."
+    alt="tslib-cursor-cli branding banner for a TypeScript library and Cursor Agent CLI integration."
   />
 </p>
 
